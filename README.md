@@ -28,10 +28,14 @@ L: Lasor
 P: points for the lasor to intersects  
 
 
-### 4. Files
+### 4. Code Files
+
+Runtime:
 
 
-### 5. Runtime
+### 5. Output File
+
+Output type:
 
 
 ### 6. Contributions
