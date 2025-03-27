@@ -18,6 +18,10 @@ Nithya Parthasarathi (npartha2@jh.edu)
 3. Solve
 4. Print out the board
 
+Conditions:
+- The lasor stay inside the board
+- Blocks stay inside the board
+
 
 ### 3. Key components
 
