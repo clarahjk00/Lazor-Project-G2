@@ -1,4 +1,4 @@
-# Lazor-Project-G2
+# Lazor Game Solver
 
 "Lazors" is a puzzle game available on Android and iPhone. The player (you!) places blocks on the board to guide the laser beam to hit specific targets by placing blocks with special functions: block, reflection, refraction, and transparent.
 
