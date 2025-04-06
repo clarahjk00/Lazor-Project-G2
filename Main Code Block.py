@@ -46,13 +46,15 @@ class Point:
         return f"Point({self.x}, {self.y})"
 
 
- 
+ @dataclass
 class Laser:
     """
     Represents a laser beam with: 
         orgin: starting point
-        direction: normalized direction vector (components are +_ 1)
+        direction: normalized direction vector (components are +/- 1)
     """
+    origin: Point
+    direction: Point 
 
 
 class Block: 
@@ -60,6 +62,21 @@ class Block:
     Base class for all the block types for the game. 
     Implemnts the common functionality for block operations. 
     """
+    def __init__(self, pos: Point, fixed: bool = False) -> None:
+        """
+        Initializes a block at a given position. 
+        Arguments:
+            pos: The position of the block on the board
+            fixed: whether the block is fixed or not (fixed meaning it can't move)
+        """
+        self.pos = pos
+        self.fixed = fixed 
+    
+    def interact(self, laser: Laser) -> List[Laser]:
+        """ 
+        Defines how the block interacts with an incoming laser
+        """
+
 
 
 class ReflectBlock (Block):
