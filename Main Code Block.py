@@ -155,4 +155,56 @@ class Board:
         Target points 
         Available blocks to place 
     """
-    
+    def __init__(self, width: int, height: int) -> None:
+        """
+        Initialize an empty game board.
+        
+        Arguments
+            width: maximum x-coordinate 
+            height: maximum y-coordinate 
+        """
+        self.width = width
+        self.height = height
+        self.grid = {}  # dictionary mapping positions to Block objects
+        self.lasers = []  # list of Laser objects (starting points)
+        self.targets = set()  # set of Point objects that must be intersected
+        self.available_blocks = {'A': 0, 'B': 0, 'C': 0}  # available block counts
+
+    def add_block(self, block: Block) -> None:
+        """
+        Add a block to the board.
+        
+        Arguments
+            block: block to add
+            
+        Raises:
+            ValueError: raises error if position is already occupied
+        """
+        if block.pos in self.grid:
+            raise ValueError(f"Position {block.pos} already occupied")
+        self.grid[block.pos] = block
+
+    def add_laser(self, x: int, y: int, dx: int, dy: int) -> None:
+        """
+        Add a laser source to the board.
+        
+        Arguments:
+            x: starting x-coordinate
+            y: starting y-coordinate
+            dx: initial x-direction component
+            dy: initial y-direction component
+        """
+        # Nnrmalize direction to (+/- 1, +/-1)
+        norm_dx = 1 if dx > 0 else -1
+        norm_dy = 1 if dy > 0 else -1
+        self.lasers.append(Laser(Point(x, y), Point(norm_dx, norm_dy)))
+
+    def add_target(self, x: int, y: int) -> None:
+        """
+        Add a target point that must be intersected by lasers.
+        
+        Arguments:
+            x: target x-coordinate
+            y: target y-coordinate
+        """
+        self.targets.add(Point(x, y))
