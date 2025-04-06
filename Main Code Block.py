@@ -75,7 +75,17 @@ class Block:
     def interact(self, laser: Laser) -> List[Laser]:
         """ 
         Defines how the block interacts with an incoming laser
+        Arguments:
+            laser: incoming laser 
+        Returns:
+            list of outgoing lasers after the interaction
         """
+        raise NotImplementedError
+    
+    def __repr__(self) -> str:
+        """String representation for debugging"""
+        return f"{self.__class__.__name__}(pos={self.pos}, fixed={self.fixed})"
+    
 
 
 
@@ -83,7 +93,20 @@ class ReflectBlock (Block):
     """
     Block that reflects incoming lasers at 90 degrees.
     """
+    
     def interact(self, laser: Laser):
+        """
+        Reflects the incoming laser beam.
+        
+        Arguments:
+            laser: incoming laser beam
+            
+        Returns:
+            list containing one reflected laser beam
+        """
+        # reflect by reversing both x and y components
+        new_dir = Point(-laser.direction.x, -laser.direction.y)
+        return [Laser(self.pos, new_dir)]
 
 
 class OpaqueBlock (Block):
@@ -91,10 +114,38 @@ class OpaqueBlock (Block):
     Block that absorbs lasers and stops their propagation).
     """
 
+    def interact(self, laser: Laser) -> List[Laser]:
+        """
+        Absorb the incoming laser beam.
+        
+        Arguments:
+            laser: incoming laser beam
+            
+        Returns:
+            empty list, since the laser stops here
+        """
+        return []
+
+
 class RefractBlock (Block):
     """
     Block that refracts, creating both reflected and transmitted beams.
     """
+
+    def interact(self, laser: Laser) -> List[Laser]:
+        """
+        Refract the incoming laser beam into two beams.
+        
+        Arguments:
+            laser: incoming laser beam
+            
+        Returns:
+            list containing both refracted and reflected beams
+        """
+        return [
+            Laser(self.pos, laser.direction),  # Transmitted beam (continues)
+            Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
+        ]
 
 class Board:
     """
