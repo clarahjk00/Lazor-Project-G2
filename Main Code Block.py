@@ -155,3 +155,4 @@ class Board:
         Target points 
         Available blocks to place 
     """
+    
