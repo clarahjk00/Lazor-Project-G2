@@ -11,6 +11,7 @@ This program solves the Lazor Game by:
 
 import time 
 import copy
+import os
 from dataclasses import dataclass
 from typing import List, Set, Optional
 
@@ -351,7 +352,7 @@ def parse_bff(filename):
     for x, y in targets:
         board.add_target(x, y)
 
-    return board
+    return grid, board
 
 
 def solver(board):
@@ -430,8 +431,70 @@ def solver(board):
     return None
 
 
+def save_solution(board, grid, filename):
+    """
+    Save the solution into a file with the original grid format.
+    'o' is replaced with the block type used in the solution.
+
+    Arguments:
+        board: Board object with the solution
+        grid: original grid layout in bff file
+        filename: path to save the solution file as {original}_solution.bff
+    """
+    with open(filename, 'w') as f:
+        f.write("GRID START\n")
+
+        # Start going through each row of the grid
+        for y, row in enumerate(grid):
+            solution_row = []  # To store the row of the solution
+
+            # Go through each cell in the row
+            for x, cell in enumerate(row):
+                pos = Point(x * 2, y * 2)  # Get the position in the fine grid
 
 
-# if __name__ == '__main__':
-#     board = parse_bff('test.bff')
-#     Answer = solver(board)
+                if cell == 'x':
+                    solution_row.append('x')
+                elif cell == 'o':
+                    if pos in board.grid:
+                        block = board.grid[pos]  # Get the block at the position
+                        
+                        # Start placing the block type in the solution row
+                        if isinstance(block, ReflectBlock):
+                            solution_row.append('A')
+                        elif isinstance(block, OpaqueBlock):
+                            solution_row.append('B')
+                        elif isinstance(block, RefractBlock):
+                            solution_row.append('C')
+                        
+                    else:
+                        solution_row.append('o')  # If no functional block is placed, keep it as 'o'
+                else:
+                    solution_row.append(cell)  #  Keep the original block type if no change occured
+            
+            #Write the solution row to the file with space between each cell
+            f.write(' '.join(solution_row) + '\n')
+
+        # Finish the file with GRID STOP
+        f.write("GRID STOP\n")
+
+
+if __name__ == '__main__':
+    input_file = 'test.bff'
+    output_file = 'test_solution.bff'
+
+    time_start = time.time()  # Start timer
+
+    grid, board = parse_bff(input_file)
+    solution = solver(board)
+
+    time_final = time.time()  # End timer
+    time_taken = time_final - time_start
+
+    if solution:
+        save_solution(board, grid, output_file)
+        print(f"Solution is saved to {output_file}.")
+    else:
+        print("No solution.")
+
+    print(f"{time_taken:.3f} seconds to solve.")
