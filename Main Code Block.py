@@ -7,7 +7,6 @@ This program solves the Lazor Game by:
     Finding vaid block placements that makes lasers hit all the targets
     Outputting the solution to a file 
 
-Uses object-oriented design with class structures. 
 """
 
 import time 
@@ -207,3 +206,50 @@ class Board:
             y: target y-coordinate
         """
         self.targets.add(Point(x, y))
+
+    def is_valid_position(self, pos: Point) -> bool:
+        """
+        Check if a position is within board bounds.
+        
+        Arguments:
+            pos: position to check
+            
+        Returns:
+            true if position is valid, false otherwise
+        """
+        return 0 <= pos.x <= self.width and 0 <= pos.y <= self.height
+    
+    def simulate_lasers(self) -> Set[Point]:
+        """
+        Simulate all laser paths through the current board configuration.
+        
+        Returns:
+            set of all points that lasers pass through
+        """
+        visited = set()  # points visited by lasers
+        active_lasers = [copy.deepcopy(laser) for laser in self.lasers]  # working copy
+
+        while active_lasers:
+            laser = active_lasers.pop()
+            current = laser.origin
+            direction = laser.direction
+
+            while True:
+                # move laser one step in its direction
+                current += direction
+
+                # check if laser went out of bounds
+                if not self.is_valid_position(current):
+                    break
+
+                # record this point as visited by a laser
+                visited.add(current)
+
+                # check for block interaction
+                if current in self.grid:
+                    block = self.grid[current]
+                    new_lasers = block.interact(Laser(current, direction))
+                    active_lasers.extend(new_lasers)
+                    break
+
+        return visited
