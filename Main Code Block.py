@@ -267,7 +267,7 @@ class Board:
 
 
 def parse_bff(filename):
-    """
+    '''
     Parse a .bff file to create a Board object.
 
     Arguments:
@@ -275,67 +275,53 @@ def parse_bff(filename):
 
     Returns:
         Board object initialised with the parsed data.
-    """
-    
+    '''
     with open(filename, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
 
-    lines = [line for line in lines if line and not line.startswith('#')]  # Remove comments and empty lines
+    lines = [line for line in lines if line and not line.startswith('#')]  # remove comments and empty lines
 
     grid = []
     available_blocks = {'A': 0, 'B': 0, 'C': 0}
     lasers = []
     targets = []
-    in_grid = False
+    read_grid = False
 
     # Iterate through lines to parse the grid and other elements
     for line in lines:
         if line == 'GRID START':
-            in_grid = True
+            read_grid = True
             continue
         elif line == 'GRID STOP':
-            in_grid = False
+            read_grid = False
             continue
 
-        if in_grid:
-            grid.append(line.split())  # Process grid lines
+        if read_grid:
+            grid.append(line.split())  # process grid lines
         else:
-            parts = line.split()  # Process other lines
+            parts = line.split()  # process other lines
             if not parts:
                 continue
 
             instruction = parts[0]
             if instruction in ('A', 'B', 'C'):
-                #Block type and count
-                if len(parts) != 2:  
-                    raise ValueError(f"Invalid block count: {line}")
                 available_blocks[instruction] = int(parts[1])
 
             elif instruction == 'L':  # Laser in format L x y dx dy
-                if len(parts) != 5:
-                    raise ValueError(f"Invalid laser: {line}")
                 x, y, dx, dy = map(int, parts[1:5])
                 lasers.append((x, y, dx, dy))
 
             elif instruction == 'P':  # Target in format P x y
-                if len(parts) != 3:
-                    raise ValueError(f"Invalid intersection: {line}")
                 x, y = map(int, parts[1:3])
                 targets.append((x, y))
-
-            else:
-                raise ValueError(f"Unknown instruction: {line}")
     
 
-    # Evaluate the board dimensions
-    if not grid:
-        raise ValueError("No grid found in file")
-
+    # Evaulate the board dimensions
     height = len(grid)
     width = len(grid[0])
     
     # Create the board
-    board = Board(width * 2, height *2)  # Multiply by 2 to account for the fine grid
+    board = Board(width * 2, height *2)  # Muliply by 2 to account for the fine grid
 
     # Add fixed blocks to the board
     for y, row in enumerate(grid):
@@ -352,8 +338,7 @@ def parse_bff(filename):
                 board.add_block(OpaqueBlock(pos, fixed=True))
             elif cell == 'C':
                 board.add_block(RefractBlock(pos, fixed=True))
-            else:
-                raise ValueError(f"Invalid blocks: {cell}")
+
     
     # Add available blocks to the board
     board.available_blocks = available_blocks
@@ -369,4 +354,84 @@ def parse_bff(filename):
     return board
 
 
+def solver(board):
+    """
+    Solve the Lazor game by finding a valid block placement.
+    
+    Arguments:
+        board: Board object to solve
+        
+    Returns:
+        List of blocks that make the board solvable, or None if no solution is found.
+    """
+    
+    # Get all positions marked with 'o' (empty blocks)
+    empty_blocks = []
+    for pos in board.grid:
+        if board.grid[pos] is None:
+            empty_blocks.append(pos)
+
+
+    # Get the available blocks to place on the board
+    # Converte 'A', 2 into 'A', 'A' etc.
+    blocks_placable = []
+    for block_type, count in board.available_blocks.items():
+        blocks_placable.extend([block_type] * count)
+
+    solution = []  # List to store the solution blocks
+
+    # Backtracking function to check all combinations of blocks
+    def try_place(index):
+        """
+        Recursive function for block placements.
+
+        Arguments:
+            index: current index in the blocks list
+
+        Returns:
+            True if a soludtion is found, otherwise False.
+        """
+        if index >= len(blocks_placable):
+            # Check if the board is solved with the current configuration
+            return board.is_solved()
+        
+        # Remaining positions to fill
+        for pos in empty_blocks:
+            # Skip if the position is already occupied
+            if pos in board.grid:
+                continue
+
+            current_type = blocks_placable[index]  # Get the current block type
+            if current_type == 'A':
+                block = ReflectBlock(pos)  # Create a ReflectBlock
+            elif current_type == 'B':
+                block = OpaqueBlock(pos)  # Create an OpaqueBlock
+            elif current_type == 'C':
+                block = RefractBlock(pos)  # Create a RefractBlock
+            
+
+            # Add the block to the board
+            board.add_block(block)
+            solution.append(block)
+
+            # Check if the board is valid with the current block placement
+            if try_place(index + 1):
+                return True
+
+            # Remove the block if no solution
+            del board.grid[pos]
+            solution.pop()
+
+        return False
+
+
+    if try_place(0):
+        return solution  # Return the solution blocks if found
+    return None
+
+
+
+
 # if __name__ == '__main__':
+#     board = parse_bff('test.bff')
+#     Answer = solver(board)
