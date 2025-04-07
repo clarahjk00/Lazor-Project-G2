@@ -46,7 +46,7 @@ class Point:
         """ String for debugging."""
         return f"Point({self.x}, {self.y})"
 
-
+@dataclass
 class Laser:
     """
     Represents a laser beam with: 
