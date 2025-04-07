@@ -10,6 +10,7 @@ This program solves the Lazor Game by:
 """
 
 import time 
+import copy
 from dataclasses import dataclass
 from typing import List, Set, Optional
 
