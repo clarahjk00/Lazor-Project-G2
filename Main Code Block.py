@@ -264,3 +264,109 @@ class Board:
         """
         laser_paths = self.simulate_lasers()
         return self.targets.issubset(laser_paths)
+
+
+def parse_bff(filename):
+    """
+    Parse a .bff file to create a Board object.
+
+    Arguments:
+        filename: path to the .bff file
+
+    Returns:
+        Board object initialised with the parsed data.
+    """
+    
+    with open(filename, 'r') as f:
+        lines = [line.strip() for line in f.readlines()]
+
+    lines = [line for line in lines if line and not line.startswith('#')]  # Remove comments and empty lines
+
+    grid = []
+    available_blocks = {'A': 0, 'B': 0, 'C': 0}
+    lasers = []
+    targets = []
+    in_grid = False
+
+    # Iterate through lines to parse the grid and other elements
+    for line in lines:
+        if line == 'GRID START':
+            in_grid = True
+            continue
+        elif line == 'GRID STOP':
+            in_grid = False
+            continue
+
+        if in_grid:
+            grid.append(line.split())  # Process grid lines
+        else:
+            parts = line.split()  # Process other lines
+            if not parts:
+                continue
+
+            instruction = parts[0]
+            if instruction in ('A', 'B', 'C'):
+                #Block type and count
+                if len(parts) != 2:  
+                    raise ValueError(f"Invalid block count: {line}")
+                available_blocks[instruction] = int(parts[1])
+
+            elif instruction == 'L':  # Laser in format L x y dx dy
+                if len(parts) != 5:
+                    raise ValueError(f"Invalid laser: {line}")
+                x, y, dx, dy = map(int, parts[1:5])
+                lasers.append((x, y, dx, dy))
+
+            elif instruction == 'P':  # Target in format P x y
+                if len(parts) != 3:
+                    raise ValueError(f"Invalid intersection: {line}")
+                x, y = map(int, parts[1:3])
+                targets.append((x, y))
+
+            else:
+                raise ValueError(f"Unknown instruction: {line}")
+    
+
+    # Evaluate the board dimensions
+    if not grid:
+        raise ValueError("No grid found in file")
+
+    height = len(grid)
+    width = len(grid[0])
+    
+    # Create the board
+    board = Board(width * 2, height *2)  # Multiply by 2 to account for the fine grid
+
+    # Add fixed blocks to the board
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            pos = Point(x * 2, y * 2)  # fine grid
+
+            if cell == 'x':  # No blocks allowed
+                continue
+            elif cell == 'o':  # Blocks allowed but no fixed blocks
+                continue
+            elif cell == 'A':
+                board.add_block(ReflectBlock(pos, fixed=True))
+            elif cell == 'B':
+                board.add_block(OpaqueBlock(pos, fixed=True))
+            elif cell == 'C':
+                board.add_block(RefractBlock(pos, fixed=True))
+            else:
+                raise ValueError(f"Invalid blocks: {cell}")
+    
+    # Add available blocks to the board
+    board.available_blocks = available_blocks
+
+    # Add lasers to the board
+    for x, y, dx, dy in lasers:
+        board.add_laser(x, y, dx, dy)
+
+    # Add targets to the board
+    for x, y in targets:
+        board.add_target(x, y)
+
+    return board
+
+
+# if __name__ == '__main__':
