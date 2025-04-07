@@ -346,7 +346,10 @@ def parse_bff(filename):
 
     # Add lasers to the board
     for x, y, dx, dy in lasers:
-        board.add_laser(x, y, dx, dy)
+        dx = 1 if dx > 0 else -1 if dx < 0 else 0
+        dy = 1 if dy > 0 else -1 if dy < 0 else 0
+        laser = Laser(Point(x, y), Point(dx, dy))
+        board.lasers.append(laser)
 
     # Add targets to the board
     for x, y in targets:
