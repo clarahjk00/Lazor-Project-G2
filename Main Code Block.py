@@ -195,8 +195,8 @@ class Board:
             dy: initial y-direction component
         """
         # Nnrmalize direction to (+/- 1, +/-1)
-        norm_dx = 1 if dx > 0 else -1
-        norm_dy = 1 if dy > 0 else -1
+        norm_dx = 1 if dx > 0 else -1 if dx < 0 else 0
+        norm_dy = 1 if dy > 0 else -1 if dy < 0 else 0
         self.lasers.append(Laser(Point(x, y), Point(norm_dx, norm_dy)))
 
     def add_target(self, x: int, y: int) -> None:
