@@ -215,7 +215,7 @@ class Board:
             pos: position to check
             
         Returns:
-            true if position is valid, false otherwise
+            true if position is valid, otherwise false 
         """
         return 0 <= pos.x <= self.width and 0 <= pos.y <= self.height
     
@@ -253,3 +253,13 @@ class Board:
                     break
 
         return visited
+    
+    def is_solved(self) -> bool:
+        """
+        Check if the current board configuration solves the puzzle.
+        
+        Returns:
+            true if all targets are hit by lasers, otherwise false 
+        """
+        laser_paths = self.simulate_lasers()
+        return self.targets.issubset(laser_paths)
