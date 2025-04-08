@@ -11,10 +11,11 @@ The implementation uses object-oriented design with proper class structures,
 follows PEP8 style guidelines, and includes comprehensive comments.
 """
 
+
 import time
+import copy
 from dataclasses import dataclass
 from typing import List, Set, Optional
-
 
 @dataclass
 class Point:
@@ -43,7 +44,6 @@ class Point:
         """String representation for debugging."""
         return f"Point({self.x}, {self.y})"
 
-
 @dataclass
 class Laser:
     """
@@ -53,7 +53,6 @@ class Laser:
     """
     origin: Point
     direction: Point
-
 
 class Block:
     """
@@ -89,7 +88,6 @@ class Block:
         """String representation for debugging."""
         return f"{self.__class__.__name__}(pos={self.pos}, fixed={self.fixed})"
 
-
 class ReflectBlock(Block):
     """Block that reflects incoming lasers at 90 degrees."""
 
@@ -123,7 +121,6 @@ class OpaqueBlock(Block):
         """
         return []
 
-
 class RefractBlock(Block):
     """Block that refracts lasers, creating both reflected and transmitted beams."""
 
@@ -141,7 +138,6 @@ class RefractBlock(Block):
             Laser(self.pos, laser.direction),  # Transmitted beam (continues)
             Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
         ]
-
 
 class Board:
     """
@@ -227,30 +223,40 @@ class Board:
         """
         visited = set()  # Points visited by lasers
         active_lasers = [copy.deepcopy(laser) for laser in self.lasers]  # Working copy
+        print(f"\nSimulating {len(active_lasers)} lasers...")
 
         while active_lasers:
             laser = active_lasers.pop()
             current = laser.origin
             direction = laser.direction
+            print(f"\nLaser from {current} direction {direction}")
 
             while True:
                 # Move laser one step in its direction
                 current += direction
+                print(f"  Step to {current}", end=" ")
 
                 # Check if laser went out of bounds
                 if not self.is_valid_position(current):
+                    print("(out of bounds)")
                     break
 
                 # Record this point as visited by a laser
                 visited.add(current)
+                print("(visited)")
 
                 # Check for block interaction
                 if current in self.grid:
                     block = self.grid[current]
+                    print(f"  Hit {block} at {current}")
                     new_lasers = block.interact(Laser(current, direction))
+                    print(f"  Generated {len(new_lasers)} new lasers")
                     active_lasers.extend(new_lasers)
                     break
 
+        print(f"Total points visited: {len(visited)}")
+        print(f"Targets: {self.targets}")
+        print(f"Hit Targets: {self.targets.intersection(visited)}")
         return visited
 
     def is_solved(self) -> bool:
@@ -261,7 +267,10 @@ class Board:
             True if all targets are hit by lasers, False otherwise
         """
         laser_paths = self.simulate_lasers()
-        return self.targets.issubset(laser_paths)
+        missed = self.targets - laser_paths
+        if missed:
+            print(f"Missed targets: {missed}")
+        return not missed
 
 
 def parse_bff(filename: str) -> Board:
@@ -327,6 +336,12 @@ def parse_bff(filename: str) -> Board:
     if board is None:
         raise ValueError("Invalid .bff file - no grid definition found")
 
+    print("\n=== Parsed Board Configuration ===")
+    print(f"Board Size: {board.width}x{board.height}")
+    print(f"Fixed Blocks: {len([b for b in board.grid.values() if b.fixed])}")
+    print(f"Lasers: {len(board.lasers)}")
+    print(f"Targets: {len(board.targets)}")
+    print(f"Available Blocks: A={board.available_blocks['A']}, B={board.available_blocks['B']}, C={board.available_blocks['C']}")
     return board
 
 
@@ -375,31 +390,39 @@ def solve_lazor(board: Board, timeout: int = 120) -> Optional[Board]:
         """
         # Check timeout
         if time.time() - start_time > timeout:
+            print("Timeout reached during backtracking")
             return False
 
         # Base case: all blocks placed
         if index == len(blocks_to_place):
-            return board.is_solved()
+            print("\n=== Testing Board Configuration ===")
+            print(f"Blocks Placed: {len(used_positions)}/{len(blocks_to_place)}")
+            print(f"Positions: {used_positions}")
+            print("Simulating lasers...")
+            if board.is_solved():
+                print("SOLUTION FOUND!")
+                return True
+            else:
+                print("Not a solution (missed targets)")
+                return False
 
-        # Try placing current block in all available positions
+        print(f"\nPlacing block {index + 1}/{len(blocks_to_place)}...")
         for pos in empty_positions:
             if pos in used_positions:
-                continue  # Position already used
-
-            # Place the block
+                continue
+            print(f"  Trying position {pos}...", end=" ")
             block = blocks_to_place[index]
             block.pos = pos
             board.add_block(block)
             used_positions.append(pos)
 
-            # Recurse to place next block
             if backtrack(index + 1, used_positions):
                 return True
 
-            # Backtrack - remove the block
+            # Backtrack
             del board.grid[pos]
             used_positions.pop()
-
+            print("Backtracked.")
         return False
 
     # Start the backtracking process
@@ -480,7 +503,6 @@ def main() -> None:
         print(f"Error parsing file: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")
-
 
 if __name__ == "__main__":
     main()
