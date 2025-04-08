@@ -153,34 +153,24 @@ class RefractBlock (Block):
         Returns:
             list containing both refracted and reflected beams
         """
-        def interact(self, laser: Laser) -> List[Laser]:
-            """
-            Refract the incoming laser beam into two beams.
-            
-            Arguments:
-                laser: incoming laser beam
-                
-            Returns:
-                list containing both refracted and reflected beams
-            """
-            prev_pos = laser.origin
-            block_pos = self.pos
-            dx, dy = laser.direction.x, laser.direction.y
+        prev_pos = laser.origin
+        block_pos = self.pos
+        dx, dy = laser.direction.x, laser.direction.y
 
-            # Transmitted beam (goes through unchanged)
-            transmitted = Laser(block_pos, Point(dx, dy))
+        # Transmitted beam (goes through unchanged)
+        transmitted = Laser(block_pos, Point(dx, dy))
 
-            # Reflected beam (one axis flipped based on entry side)
-            if prev_pos.x == block_pos.x and prev_pos.y != block_pos.y:
-                # Hit from top or bottom → flip y
-                reflected = Laser(block_pos, Point(dx, -dy))
-            elif prev_pos.y == block_pos.y and prev_pos.x != block_pos.x:
-                # Hit from left or right → flip x
-                reflected = Laser(block_pos, Point(-dx, dy))
-            else:
-                raise ValueError("Laser hit refract block from unexpected position.")
-            
-            return [transmitted, reflected]
+        # Reflected beam (one axis flipped based on entry side)
+        if prev_pos.x == block_pos.x and prev_pos.y != block_pos.y:
+            # Hit from top or bottom → flip y
+            reflected = Laser(block_pos, Point(dx, -dy))
+        elif prev_pos.y == block_pos.y and prev_pos.x != block_pos.x:
+            # Hit from left or right → flip x
+            reflected = Laser(block_pos, Point(-dx, dy))
+        else:
+            raise ValueError("Laser hit refract block from unexpected position.")
+        
+        return [transmitted, reflected]
 
 class Board:
     """
@@ -305,6 +295,16 @@ class Board:
         """
         laser_paths = self.simulate_lasers()
         return self.targets.issubset(laser_paths)
+    
+    def find_empty_positions(self, grid):
+        """
+        Find positions where blocks can be placed (marked with 'o' in grid)
+        """
+        self.empty_positions = []
+        for y, row in enumerate(grid):
+            for x, cell in enumerate(row):
+                if cell == 'o':
+                    self.empty_positions.append(Point(x * 2, y * 2))  # fine grid
 
 
 # def parse_bff(filename):
@@ -407,7 +407,7 @@ def solver(board: Board) -> Optional[List[Block]]:
     """
     
     # Get all positions marked with 'o' (empty blocks)
-    empty_blocks = board.empty_positions.copy()
+    # empty_blocks = board.empty_positions.copy()
     #for pos in board.grid:
     #    if board.grid[pos] is None:
     #        empty_blocks.append(pos)
@@ -432,12 +432,12 @@ def solver(board: Board) -> Optional[List[Block]]:
         Returns:
             True if a soludtion is found, otherwise False.
         """
-        for i, pos in enumerate(empty_blocks):
+        if index >= len(blocks_placable):
             # Check if the board is solved with the current configuration
             return board.is_solved()
         
-        # Remaining positions to fill
-        for pos in empty_blocks:
+        # Try each empty position for the current block
+        for pos in board.empty_positions:
             # Skip if the position is already occupied
             if pos in board.grid:
                 continue
@@ -455,8 +455,6 @@ def solver(board: Board) -> Optional[List[Block]]:
             board.add_block(block)
             solution.append(block)
 
-            # Remove this position from available positions (temporarily)
-            empty_blocks[i] = None
 
             # Check if the board is valid with the current block placement
             if try_place(index + 1):
