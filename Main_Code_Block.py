@@ -153,11 +153,25 @@ class RefractBlock (Block):
         Returns:
             list containing both refracted and reflected beams
         """
-        return [
-            Laser(self.pos, laser.direction),  # Transmitted beam (continues)
-            # Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
-            Laser(self.pos, Point(-laser.direction.y, laser.direction.x))
-        ]
+        def interact(self, laser: Laser) -> List[Laser]:
+            prev_pos = laser.origin
+            block_pos = self.pos
+            dx, dy = laser.direction.x, laser.direction.y
+
+            # Transmitted beam (goes through unchanged)
+            transmitted = Laser(block_pos, Point(dx, dy))
+
+            # Reflected beam (one axis flipped based on entry side)
+            if prev_pos.x == block_pos.x and prev_pos.y != block_pos.y:
+                # Hit from top or bottom → flip y
+                reflected = Laser(block_pos, Point(dx, -dy))
+            elif prev_pos.y == block_pos.y and prev_pos.x != block_pos.x:
+                # Hit from left or right → flip x
+                reflected = Laser(block_pos, Point(-dx, dy))
+            else:
+                raise ValueError("Laser hit refract block from unexpected position.")
+
+            return [transmitted, reflected]
 
 class Board:
     """
