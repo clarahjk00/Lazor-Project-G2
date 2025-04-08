@@ -357,6 +357,11 @@ def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
                 targets.append((x, y))
     
 
+    print(f"Grid demensions: {len(grid)}x{len(grid[0])}")
+    print(f"Available blocks: {available_blocks}")
+    print(f"Laser count: {len(lasers)}")
+    print(f"Target count: {len(targets)}")
+
     # Evaulate the board dimensions
     height = len(grid)
     # width = len(grid[0])
@@ -389,6 +394,9 @@ def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
     # Add targets to the board
     for x, y in targets:
         board.add_target(x, y)
+    
+    print(f"Empty positions: {board.empty_positions}")
+    print(f"Fixed blocks: {len(board.grid)}")
 
     return grid, board
 
@@ -410,7 +418,6 @@ def solver(board: Board) -> Optional[List[Block]]:
     #for pos in board.grid:
     #    if board.grid[pos] is None:
     #        empty_blocks.append(pos)
-
 
     # Get the available blocks to place on the board
     # Converte 'A', 2 into 'A', 'A' etc.
