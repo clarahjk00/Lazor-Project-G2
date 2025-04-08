@@ -90,7 +90,7 @@ class ReflectBlock (Block):
     Block that reflects incoming lasers at 90 degrees.
     """
     
-    def interact(self, laser: Laser):
+    def interact(self, laser: Laser) -> List[Laser]:
         """
         Reflects the incoming laser beam.
         
@@ -194,7 +194,7 @@ class Board:
         self.grid: dict[Point, Block] = {}
         # self.lasers = []  # list of Laser objects (starting points)
         self.lasers: List[Laser] = []
-        self.targets = set()  # set of Point objects that must be intersected
+        self.targets: Set[Point] = set()  # set of Point objects that must be intersected
         self.available_blocks = {'A': 0, 'B': 0, 'C': 0}  # available block counts
         self.empty_positions: List[Point] = []
 
@@ -249,7 +249,7 @@ class Board:
         Returns:
             true if position is valid, otherwise false 
         """
-        return 0 <= pos.x <= self.width and 0 <= pos.y <= self.height
+        return 0 <= pos.x < self.width and 0 <= pos.y < self.height
     
     def simulate_lasers(self) -> Set[Point]:
         """
@@ -304,15 +304,6 @@ class Board:
         laser_paths = self.simulate_lasers()
         return self.targets.issubset(laser_paths)
     
-    def find_empty_positions(self, grid):
-        """
-        Find positions where blocks can be placed (marked with 'o' in grid)
-        """
-        self.empty_positions = []
-        for y, row in enumerate(grid):
-            for x, cell in enumerate(row):
-                if cell == 'o':
-                    self.empty_positions.append(Point(x * 2, y * 2))  # fine grid
 
 
 # def parse_bff(filename):
@@ -479,7 +470,7 @@ def solver(board: Board) -> Optional[List[Block]]:
     return None
 
 
-def save_solution(board, grid, filename):
+def save_solution(board: Board, grid: List[List[str]], filename: str) -> None:
     """
     Save the solution into a file with the original grid format.
     'o' is replaced with the block type used in the solution.
