@@ -1,11 +1,12 @@
 """ 
 Lazor Project
+Clara Kim and Nithya Parthasarathi 
 
 This program solves the Lazor Game by:
     Parsing board configuration files (.bff format)
     Simulating laser paths through different block types (reflect, opaque, and refract)
     Finding vaid block placements that makes lasers hit all the targets
-    Outputting the solution to a file 
+    Outputting the solution to a file in txt format
 
 """
 
