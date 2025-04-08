@@ -154,6 +154,15 @@ class RefractBlock (Block):
             list containing both refracted and reflected beams
         """
         def interact(self, laser: Laser) -> List[Laser]:
+            """
+            Refract the incoming laser beam into two beams.
+            
+            Arguments:
+                laser: incoming laser beam
+                
+            Returns:
+                list containing both refracted and reflected beams
+            """
             prev_pos = laser.origin
             block_pos = self.pos
             dx, dy = laser.direction.x, laser.direction.y
@@ -170,7 +179,7 @@ class RefractBlock (Block):
                 reflected = Laser(block_pos, Point(-dx, dy))
             else:
                 raise ValueError("Laser hit refract block from unexpected position.")
-
+            
             return [transmitted, reflected]
 
 class Board:
@@ -360,12 +369,9 @@ def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
     # Add fixed blocks to the board
     for y, row in enumerate(grid):
         for x, cell in enumerate(row):
-            pos = Point(x * 2, y * 2)  # fine grid
-
-            if cell == 'o':  # Blocks allowed but no fixed blocks
-                continue
-            # elif cell == 'x':  # No blocks allowed
-            #     continue
+            pos = Point(x * 2, y * 2)
+            if cell == 'o':  # Empty position where blocks can be placed
+                board.empty_positions.append(pos)
             elif cell == 'A':
                 board.add_block(ReflectBlock(pos, fixed=True))
             elif cell == 'B':
@@ -401,10 +407,10 @@ def solver(board: Board) -> Optional[List[Block]]:
     """
     
     # Get all positions marked with 'o' (empty blocks)
-    empty_blocks = []
-    for pos in board.grid:
-        if board.grid[pos] is None:
-            empty_blocks.append(pos)
+    empty_blocks = board.empty_positions.copy()
+    #for pos in board.grid:
+    #    if board.grid[pos] is None:
+    #        empty_blocks.append(pos)
 
 
     # Get the available blocks to place on the board
@@ -426,7 +432,7 @@ def solver(board: Board) -> Optional[List[Block]]:
         Returns:
             True if a soludtion is found, otherwise False.
         """
-        if index >= len(blocks_placable):
+        for i, pos in enumerate(empty_blocks):
             # Check if the board is solved with the current configuration
             return board.is_solved()
         
@@ -449,6 +455,9 @@ def solver(board: Board) -> Optional[List[Block]]:
             board.add_block(block)
             solution.append(block)
 
+            # Remove this position from available positions (temporarily)
+            empty_blocks[i] = None
+
             # Check if the board is valid with the current block placement
             if try_place(index + 1):
                 return True
@@ -458,7 +467,6 @@ def solver(board: Board) -> Optional[List[Block]]:
             solution.pop()
 
         return False
-
 
     if try_place(0):
         return solution  # Return the solution blocks if found
@@ -514,13 +522,20 @@ def save_solution(board, grid, filename):
 
 
 if __name__ == '__main__':
-    input_file = 'mad_7.bff'
-    output_file = 'mad_7_solution.txt'
+    input_file = 'mad_4.bff'
+    output_file = 'mad_4_solution.txt'
 
     time_start = time.time()  # Start timer
 
     grid, board = parse_bff(input_file)
     solution = solver(board)
+    
+    # Debug information
+    print(f"Board dimensions: {board.width}x{board.height}")
+    print(f"Number of empty positions: {len(board.empty_positions)}")
+    print(f"Available blocks: {board.available_blocks}")
+    print(f"Number of lasers: {len(board.lasers)}")
+    print(f"Number of targets: {len(board.targets)}")
 
     time_final = time.time()  # End timer
     time_taken = time_final - time_start
