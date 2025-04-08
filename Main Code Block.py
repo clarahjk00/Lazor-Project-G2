@@ -82,9 +82,6 @@ class Block:
         """
         raise NotImplementedError
     
-    def __repr__(self) -> str:
-        """String representation for debugging"""
-        return f"{self.__class__.__name__}(pos={self.pos}, fixed={self.fixed})"
     
 
 class ReflectBlock (Block):
@@ -103,7 +100,8 @@ class ReflectBlock (Block):
             list containing one reflected laser beam
         """
         # reflect by reversing both x and y components
-        new_dir = Point(-laser.direction.x, -laser.direction.y)
+        # new_dir = Point(-laser.direction.x, -laser.direction.y)
+        new_dir = Point(laser.direction.y, -laser.direction.x)
         return [Laser(self.pos, new_dir)]
 
 
@@ -142,7 +140,8 @@ class RefractBlock (Block):
         """
         return [
             Laser(self.pos, laser.direction),  # Transmitted beam (continues)
-            Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
+            # Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
+            Laser(self.pos, Point(-laser.direction.y, laser.direction.x))
         ]
 
 class Board:
@@ -163,10 +162,13 @@ class Board:
         """
         self.width = width
         self.height = height
-        self.grid = {}  # dictionary mapping positions to Block objects
-        self.lasers = []  # list of Laser objects (starting points)
+        # self.grid = {}  # dictionary mapping positions to Block objects
+        self.grid: dict[Point, Block] = {}
+        # self.lasers = []  # list of Laser objects (starting points)
+        self.lasers: List[Laser] = []
         self.targets = set()  # set of Point objects that must be intersected
         self.available_blocks = {'A': 0, 'B': 0, 'C': 0}  # available block counts
+        self.empty_positions: List[Point] = []
 
     def add_block(self, block: Block) -> None:
         """
@@ -193,8 +195,10 @@ class Board:
             dy: initial y-direction component
         """
         # Nnrmalize direction to (+/- 1, +/-1)
-        norm_dx = 1 if dx > 0 else -1 if dx < 0 else 0
-        norm_dy = 1 if dy > 0 else -1 if dy < 0 else 0
+        # norm_dx = 1 if dx > 0 else -1 if dx < 0 else 0
+        # norm_dy = 1 if dy > 0 else -1 if dy < 0 else 0
+        norm_dx = 1 if dx > 0 else -1
+        norm_dy = 1 if dy > 0 else -1
         self.lasers.append(Laser(Point(x, y), Point(norm_dx, norm_dy)))
 
     def add_target(self, x: int, y: int) -> None:
@@ -265,7 +269,8 @@ class Board:
         return self.targets.issubset(laser_paths)
 
 
-def parse_bff(filename):
+# def parse_bff(filename):
+def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
     '''
     Parse a .bff file to create a Board object.
 
@@ -317,7 +322,8 @@ def parse_bff(filename):
 
     # Evaulate the board dimensions
     height = len(grid)
-    width = len(grid[0])
+    # width = len(grid[0])
+    width = len(grid[0]) if height > 0 else 0
     
     # Create the board
     board = Board(width * 2, height *2)  # Muliply by 2 to account for the fine grid
@@ -327,10 +333,10 @@ def parse_bff(filename):
         for x, cell in enumerate(row):
             pos = Point(x * 2, y * 2)  # fine grid
 
-            if cell == 'x':  # No blocks allowed
+            if cell == 'o':  # Blocks allowed but no fixed blocks
                 continue
-            elif cell == 'o':  # Blocks allowed but no fixed blocks
-                continue
+            # elif cell == 'x':  # No blocks allowed
+            #     continue
             elif cell == 'A':
                 board.add_block(ReflectBlock(pos, fixed=True))
             elif cell == 'B':
@@ -353,7 +359,8 @@ def parse_bff(filename):
     return grid, board
 
 
-def solver(board):
+# def solver(board):
+def solver(board: Board) -> Optional[List[Block]]:
     """
     Solve the Lazor game by finding a valid block placement.
     
@@ -478,8 +485,8 @@ def save_solution(board, grid, filename):
 
 
 if __name__ == '__main__':
-    input_file = 'test.bff'
-    output_file = 'test_solution.bff'
+    input_file = 'mad_7.bff'
+    output_file = 'mad_7_solution.txt'
 
     time_start = time.time()  # Start timer
 
