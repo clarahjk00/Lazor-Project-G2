@@ -312,8 +312,8 @@ def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
                 available_blocks[instruction] = int(parts[1])
 
             elif instruction == 'L':  # Laser in format L x y dx dy
-                x, y, dx, dy = map(int, parts[1:5])
-                lasers.append((x, y, dx, dy))
+                x, y, norm_dx, norm_dy = map(int, parts[1:5])
+                lasers.append((x, y, norm_dx, norm_dy))
 
             elif instruction == 'P':  # Target in format P x y
                 x, y = map(int, parts[1:3])
@@ -349,8 +349,8 @@ def parse_bff(filename: str) -> tuple[List[List[str]], Board]:
     board.available_blocks = available_blocks
 
     # Add lasers to the board
-    for x, y, dx, dy in lasers:
-        board.add_laser(x, y, dx, dy)
+    for x, y, norm_dx, norm_dy in lasers:
+        board.add_laser(x, y, norm_dx, norm_dy)
 
     # Add targets to the board
     for x, y in targets:
