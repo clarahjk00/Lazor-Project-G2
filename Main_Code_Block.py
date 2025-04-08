@@ -98,12 +98,26 @@ class ReflectBlock (Block):
             laser: incoming laser beam
             
         Returns:
-            list containing one reflected laser beam
+            list containing reflected laser beam
         """
-        # reflect by reversing both x and y components
-        # new_dir = Point(-laser.direction.x, -laser.direction.y)
-        new_dir = Point(laser.direction.y, -laser.direction.x)
-        return [Laser(self.pos, new_dir)]
+         # Where the laser came from
+        prev_pos = laser.origin
+        block_pos = self.pos
+
+        dx = laser.direction.x
+        dy = laser.direction.y
+
+        # Determine which side was hit: horizontal or vertical
+        if prev_pos.x == block_pos.x and prev_pos.y != block_pos.y:
+            # Hit from top or bottom → flip y
+            new_dir = Point(dx, -dy)
+        elif prev_pos.y == block_pos.y and prev_pos.x != block_pos.x:
+            # Hit from left or right → flip x
+            new_dir = Point(-dx, dy)
+        else:
+            raise ValueError("Unexpected laser entry point — not adjacent to block.")
+
+        return [Laser(block_pos, new_dir)]
 
 
 class OpaqueBlock (Block):
