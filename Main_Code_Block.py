@@ -168,7 +168,7 @@ class RefractBlock (Block):
             # Hit from left or right → flip x
             reflected = Laser(block_pos, Point(-dx, dy))
         else:
-            raise ValueError("Laser hit refract block from unexpected position.")
+            raise ValueError(f"Laser hit refract block from unexpected position. prev: {prev_pos}, block: {block_pos}")
         
         return [transmitted, reflected]
 
@@ -223,10 +223,10 @@ class Board:
             dy: initial y-direction component
         """
         # Nnrmalize direction to (+/- 1, +/-1)
-        # norm_dx = 1 if dx > 0 else -1 if dx < 0 else 0
-        # norm_dy = 1 if dy > 0 else -1 if dy < 0 else 0
-        norm_dx = 1 if dx > 0 else -1
-        norm_dy = 1 if dy > 0 else -1
+        norm_dx = 1 if dx > 0 else -1 if dx < 0 else 0
+        norm_dy = 1 if dy > 0 else -1 if dy < 0 else 0
+        # norm_dx = 1 if dx > 0 else -1
+        # norm_dy = 1 if dy > 0 else -1
         self.lasers.append(Laser(Point(x, y), Point(norm_dx, norm_dy)))
 
     def add_target(self, x: int, y: int) -> None:
@@ -259,6 +259,7 @@ class Board:
             set of all points that lasers pass through
         """
         visited = set()  # points visited by lasers
+        visited_laser_origins = set()  # keep track of laser origins to avoid infinite loops
         active_lasers = [copy.deepcopy(laser) for laser in self.lasers]  # working copy
 
         while active_lasers:
@@ -266,21 +267,28 @@ class Board:
             current = laser.origin
             direction = laser.direction
 
-            while True:
-                # move laser one step in its direction
-                current += direction
+            # Add a unique identifier for this laser to prevent loops
+            laser_id = (current, direction)
+            if laser_id in visited_laser_origins:
+                continue
+            visited_laser_origins.add(laser_id)
 
-                # check if laser went out of bounds
+            while True:
+                # Move laser one step in its direction
+                previous = current
+                current = current + direction
+
+                # Check if laser went out of bounds
                 if not self.is_valid_position(current):
                     break
 
-                # record this point as visited by a laser
+                # Record this point as visited by a laser
                 visited.add(current)
 
-                # check for block interaction
+                # Check for block interaction
                 if current in self.grid:
                     block = self.grid[current]
-                    new_lasers = block.interact(Laser(current, direction))
+                    new_lasers = block.interact(Laser(previous, direction))
                     active_lasers.extend(new_lasers)
                     break
 
