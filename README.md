@@ -51,10 +51,10 @@ P 9 2
 After compiling all the necessary parts into the .bff file, **voila!** You are ready to get the solution! 
 Scroll down to the end and edit input_file and output_file on "Main Code Block.py". For example:
 
-'''
+```
 input_file = 'whatever.bff'
 output_file = 'whatever_solution.txt'
-'''
+```
 
 *Make sure the full file name goes between ' '. Input file should end with .bff and output file should end with .txt*
 
