@@ -1,269 +1,269 @@
-""" 
-Lazor Project
+"""
+Lazors Puzzle Solver
 
-This program solves the Lazor Game by:
-    Parsing board configuration files (.bff format)
-    Simulating laser paths through different block types (reflect, opaque, and refract)
-    Finding vaid block placements that makes lasers hit all the targets
-    Outputting the solution to a file 
+This program solves the Lazors puzzle game by:
+1. Parsing board configuration files (.bff format)
+2. Simulating laser paths through various block types
+3. Finding valid block placements that make lasers hit all targets
+4. Outputting the solution to a file
 
+The implementation uses object-oriented design with proper class structures,
+follows PEP8 style guidelines, and includes comprehensive comments.
 """
 
-import time 
-import copy
-import os
+import time
 from dataclasses import dataclass
 from typing import List, Set, Optional
 
+
 @dataclass
 class Point:
-    '''
-    2D point class to represent a point with integer coordinates. 
-    It does the following using dataclass:
-        Adding 2 points.
-        Comparing 2 points.
-        Hashing - so that it can be used in sets/dictionaries.
-        String documentation - for debugging. 
-    '''
+    """
+    Represents a 2D point with integer coordinates.
+    Uses dataclass for automatic __init__, __repr__, etc.
+    """
     x: int
     y: int
 
-    def __add__(self, other):
+    def __add__(self, other: 'Point') -> 'Point':
+        """Add two points component-wise."""
         return Point(self.x + other.x, self.y + other.y)
-    
-    def __eq__(self, other):
+
+    def __eq__(self, other: object) -> bool:
+        """Check if two points have the same coordinates."""
+        if not isinstance(other, Point):
+            return NotImplemented
         return self.x == other.x and self.y == other.y
-    
-    def __hash__(self):
+
+    def __hash__(self) -> int:
+        """Make Point hashable for use in sets/dictionaries."""
         return hash((self.x, self.y))
+
+    def __repr__(self) -> str:
+        """String representation for debugging."""
+        return f"Point({self.x}, {self.y})"
+
 
 @dataclass
 class Laser:
     """
-    Represents a laser beam with: 
-        orgin: starting point
-        direction: normalized direction vector (components are +/- 1)
+    Represents a laser beam with:
+    - origin: Starting point
+    - direction: Normalized direction vector (components are ±1)
     """
-    def __init__(self, origin, direction):
-        self.origin = origin
-        self.direction = direction
+    origin: Point
+    direction: Point
 
 
-class Block: 
-    """ 
-    Base class for all the block types for the game. 
-    Implemnts the common functionality for block operations. 
+class Block:
     """
-    def __init__(self, pos, fixed=False):
+    Base class for all block types in the Lazors game.
+    Implements common functionality for block operations.
+    """
+
+    def __init__(self, pos: Point, fixed: bool = False) -> None:
         """
-        Initializes a block at a given position. 
-        Arguments:
+        Initialize a block at given position.
+        
+        Args:
             pos: The position of the block on the board
-            fixed: whether the block is fixed or not (fixed meaning it can't move)
+            fixed: Whether the block is fixed (can't be moved)
         """
         self.pos = pos
-        self.fixed = fixed 
-    
-    def interact(self, laser):
-        """ 
-        Defines how the block interacts with an incoming laser
-        Arguments:
-            laser: incoming laser 
-        Returns:
-            list of outgoing lasers after the interaction
-        """
-        raise NotImplementedError
-    
+        self.fixed = fixed
 
-class ReflectBlock (Block):
-    """
-    Block that reflects incoming lasers at 90 degrees.
-    """
-    
-    def interact(self, laser):
+    def interact(self, laser: Laser) -> List[Laser]:
         """
-        Reflects the incoming laser beam.
+        Define how the block interacts with an incoming laser.
+        To be implemented by subclasses.
         
-        Arguments:
-            laser: incoming laser beam
+        Args:
+            laser: The incoming laser beam
             
         Returns:
-            list containing one reflected laser beam
+            List of outgoing lasers after interaction
         """
-        # reflect by reversing both x and y components
-        def interact(self, laser):
-            return [Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))]
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        """String representation for debugging."""
+        return f"{self.__class__.__name__}(pos={self.pos}, fixed={self.fixed})"
 
 
-class OpaqueBlock (Block):
-    """
-    Block that absorbs lasers and stops their propagation).
-    """
+class ReflectBlock(Block):
+    """Block that reflects incoming lasers at 90 degrees."""
 
-    def interact(self, laser):
+    def interact(self, laser: Laser) -> List[Laser]:
+        """
+        Reflect the incoming laser beam.
+        
+        Args:
+            laser: The incoming laser beam
+            
+        Returns:
+            List containing one reflected laser beam
+        """
+        # Reflect by reversing both x and y components
+        new_dir = Point(-laser.direction.x, -laser.direction.y)
+        return [Laser(self.pos, new_dir)]
+
+
+class OpaqueBlock(Block):
+    """Block that absorbs lasers (stops their propagation)."""
+
+    def interact(self, laser: Laser) -> List[Laser]:
         """
         Absorb the incoming laser beam.
         
-        Arguments:
-            laser: incoming laser beam
+        Args:
+            laser: The incoming laser beam
             
         Returns:
-            empty list, since the laser stops here
+            Empty list (laser stops here)
         """
         return []
 
 
-class RefractBlock (Block):
-    """
-    Block that refracts, creating both reflected and transmitted beams.
-    """
+class RefractBlock(Block):
+    """Block that refracts lasers, creating both reflected and transmitted beams."""
 
-    def interact(self, laser):
+    def interact(self, laser: Laser) -> List[Laser]:
         """
         Refract the incoming laser beam into two beams.
         
-        Arguments:
-            laser: incoming laser beam
+        Args:
+            laser: The incoming laser beam
             
         Returns:
-            list containing both refracted and reflected beams
+            List containing both refracted and reflected beams
         """
         return [
-            Laser(self.pos, laser.direction),
-            Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))
+            Laser(self.pos, laser.direction),  # Transmitted beam (continues)
+            Laser(self.pos, Point(-laser.direction.x, -laser.direction.y))  # Reflected beam
         ]
 
+
 class Board:
-    """Game board with optimized laser simulation"""
-    def __init__(self, width, height):
+    """
+    Represents the game board with:
+    - Grid of blocks
+    - Laser sources
+    - Target points
+    - Available blocks to place
+    """
+
+    def __init__(self, width: int, height: int) -> None:
+        """
+        Initialize an empty game board.
+        
+        Args:
+            width: Maximum x-coordinate (inclusive)
+            height: Maximum y-coordinate (inclusive)
+        """
         self.width = width
         self.height = height
-        self.grid = {}
-        self.lasers = []
-        self.targets = set()
-        self.available_blocks = {'A': 0, 'B': 0, 'C': 0}
-    
-    def add_block(self, block):
-        """Add block with collision check"""
-        if block.pos in self.grid:
-            raise ValueError(f"Position {block.pos} occupied")
-        self.grid[block.pos] = block
-    
-    def add_laser(self, x, y, dx, dy):
-        """Add normalized laser source"""
-        self.lasers.append(Laser(
-            Point(x, y),
-            Point(1 if dx > 0 else -1, 1 if dy > 0 else -1)
-        ))
-    
-    def simulate_lasers(self) -> Set[Point]:
-        """Optimized laser path tracing with early termination"""
-        visited = set()
-        active_lasers = copy.deepcopy(self.lasers)
+        self.grid = {}  # Dictionary mapping positions to Block objects
+        self.lasers = []  # List of Laser objects (starting points)
+        self.targets = set()  # Set of Point objects that must be intersected
+        self.available_blocks = {'A': 0, 'B': 0, 'C': 0}  # Available block counts
+
+    def add_block(self, block: Block) -> None:
+        """
+        Add a block to the board.
         
+        Args:
+            block: The block to add
+            
+        Raises:
+            ValueError: If position is already occupied
+        """
+        if block.pos in self.grid:
+            raise ValueError(f"Position {block.pos} already occupied")
+        self.grid[block.pos] = block
+
+    def add_laser(self, x: int, y: int, dx: int, dy: int) -> None:
+        """
+        Add a laser source to the board.
+        
+        Args:
+            x: Starting x-coordinate
+            y: Starting y-coordinate
+            dx: Initial x-direction component
+            dy: Initial y-direction component
+        """
+        # Normalize direction to (±1, ±1)
+        norm_dx = 1 if dx > 0 else -1
+        norm_dy = 1 if dy > 0 else -1
+        self.lasers.append(Laser(Point(x, y), Point(norm_dx, norm_dy)))
+
+    def add_target(self, x: int, y: int) -> None:
+        """
+        Add a target point that must be intersected by lasers.
+        
+        Args:
+            x: Target x-coordinate
+            y: Target y-coordinate
+        """
+        self.targets.add(Point(x, y))
+
+    def is_valid_position(self, pos: Point) -> bool:
+        """
+        Check if a position is within board bounds.
+        
+        Args:
+            pos: Position to check
+            
+        Returns:
+            True if position is valid, False otherwise
+        """
+        return 0 <= pos.x <= self.width and 0 <= pos.y <= self.height
+
+    def simulate_lasers(self) -> Set[Point]:
+        """
+        Simulate all laser paths through the current board configuration.
+        
+        Returns:
+            Set of all points that lasers pass through
+        """
+        visited = set()  # Points visited by lasers
+        active_lasers = [copy.deepcopy(laser) for laser in self.lasers]  # Working copy
+
         while active_lasers:
             laser = active_lasers.pop()
             current = laser.origin
             direction = laser.direction
-            
+
             while True:
+                # Move laser one step in its direction
                 current += direction
-                
-                # Early termination if all targets hit
-                if self.targets.issubset(visited):
-                    return visited
-                
-                if not (0 <= current.x <= self.width and 0 <= current.y <= self.height):
+
+                # Check if laser went out of bounds
+                if not self.is_valid_position(current):
                     break
-                
+
+                # Record this point as visited by a laser
                 visited.add(current)
-                
+
+                # Check for block interaction
                 if current in self.grid:
-                    new_lasers = self.grid[current].interact(Laser(current, direction))
+                    block = self.grid[current]
+                    new_lasers = block.interact(Laser(current, direction))
                     active_lasers.extend(new_lasers)
                     break
-        
-        return visited
-    
-    def is_solved(self):
-        """Check solution with early exit"""
-        return self.targets.issubset(self.simulate_lasers())
 
-def solve_lazor(board: Board, timeout: int = 60) -> Optional[Board]:
-    """
-    Optimized solver with:
-    - Laser-guided placement heuristic
-    - Early partial solution checks
-    - Block type deduplication
-    """
-    start_time = time.time()
-    empty_positions = [
-        Point(x, y)
-        for y in range(0, board.height + 1, 2)
-        for x in range(0, board.width + 1, 2)
-        if Point(x, y) not in board.grid
-    ]
-    
-    # Create block inventory
-    blocks = []
-    for block_type, count in board.available_blocks.items():
-        blocks.extend([block_type] * count)
-    
-    # Laser path cache for heuristics
-    laser_paths = board.simulate_lasers()
-    
-    def get_next_position(placed: set) -> Optional[Point]:
-        """Position prioritization heuristic"""
-        # 1. Try positions along current laser paths
-        for pos in empty_positions:
-            if pos not in placed and pos in laser_paths:
-                return pos
-        # 2. Fall back to any available position
-        return next((p for p in empty_positions if p not in placed), None)
-    
-    def backtrack(remaining: List[str], placed: Dict[Point, str]) -> bool:
-        if time.time() - start_time > timeout:
-            return False
-            
-        if not remaining:
-            return board.is_solved()
+        return visited
+
+    def is_solved(self) -> bool:
+        """
+        Check if the current board configuration solves the puzzle.
         
-        pos = get_next_position(placed)
-        if not pos:
-            return False
-        
-        # Try each unique remaining block type
-        for block_type in set(remaining):
-            # Place block
-            if block_type == 'A':
-                block = ReflectBlock(pos)
-            elif block_type == 'B':
-                block = OpaqueBlock(pos)
-            else:
-                block = RefractBlock(pos)
-                
-            board.add_block(block)
-            placed[pos] = block_type
-            
-            # Early check if this helps
-            new_paths = board.simulate_lasers()
-            hits_targets = any(t in new_paths for t in board.targets)
-            
-            if hits_targets and backtrack(
-                [b for b in remaining if b != block_type],
-                placed
-            ):
-                return True
-            
-            # Backtrack
-            del board.grid[pos]
-            del placed[pos]
-        
-        return False
-    
-    if backtrack(blocks, {}):
-        return board
-    return None
+        Returns:
+            True if all targets are hit by lasers, False otherwise
+        """
+        laser_paths = self.simulate_lasers()
+        return self.targets.issubset(laser_paths)
+
+
 def parse_bff(filename: str) -> Board:
     """
     Parse a .bff file and create a Board object.
@@ -329,6 +329,85 @@ def parse_bff(filename: str) -> Board:
 
     return board
 
+
+def solve_lazor(board: Board, timeout: int = 120) -> Optional[Board]:
+    """
+    Solve the Lazors puzzle using backtracking algorithm.
+    
+    Args:
+        board: Initial board configuration
+        timeout: Maximum time to spend solving (seconds)
+        
+    Returns:
+        Solved Board if solution found, None otherwise
+    """
+    start_time = time.time()
+
+    # Find all empty positions where blocks can be placed
+    empty_positions = []
+    for y in range(0, board.height + 1, 2):  # Step by 2 (block positions)
+        for x in range(0, board.width + 1, 2):
+            pos = Point(x, y)
+            if pos not in board.grid:  # Only empty positions
+                empty_positions.append(pos)
+
+    # Create list of blocks to place from available counts
+    blocks_to_place = []
+    for block_type, count in board.available_blocks.items():
+        for _ in range(count):
+            if block_type == 'A':
+                blocks_to_place.append(ReflectBlock(Point(0, 0)))
+            elif block_type == 'B':
+                blocks_to_place.append(OpaqueBlock(Point(0, 0)))
+            elif block_type == 'C':
+                blocks_to_place.append(RefractBlock(Point(0, 0)))
+
+    def backtrack(index: int, used_positions: List[Point]) -> bool:
+        """
+        Recursive backtracking helper function.
+        
+        Args:
+            index: Current block index to place
+            used_positions: List of positions already occupied
+            
+        Returns:
+            True if solution found from this state, False otherwise
+        """
+        # Check timeout
+        if time.time() - start_time > timeout:
+            return False
+
+        # Base case: all blocks placed
+        if index == len(blocks_to_place):
+            return board.is_solved()
+
+        # Try placing current block in all available positions
+        for pos in empty_positions:
+            if pos in used_positions:
+                continue  # Position already used
+
+            # Place the block
+            block = blocks_to_place[index]
+            block.pos = pos
+            board.add_block(block)
+            used_positions.append(pos)
+
+            # Recurse to place next block
+            if backtrack(index + 1, used_positions):
+                return True
+
+            # Backtrack - remove the block
+            del board.grid[pos]
+            used_positions.pop()
+
+        return False
+
+    # Start the backtracking process
+    if backtrack(0, []):
+        return board
+    return None
+
+
 def save_solution(board: Board, filename: str) -> None:
     """
     Save the solution to a text file.
@@ -370,25 +449,38 @@ def save_solution(board: Board, filename: str) -> None:
         for target in sorted(board.targets, key=lambda p: (p.y, p.x)):
             f.write(f"({target.x}, {target.y})\n")
 
-if __name__ == "__main__":
-    input_file = "mad_1.bff"  # Same directory as script
-    output_file = "solution.txt"
+
+def main() -> None:
+    """Main function to execute the solver."""
+    print("Lazors Puzzle Solver")
+    print("-------------------\n")
     
+    # Get input file
+    input_file = input("Enter path to .bff file: ").strip()
+    output_file = input("Enter output file path: ").strip()
+
     try:
-        print(f"Solving {input_file}...")
+        # Parse and solve
+        print("\nParsing board configuration...")
         board = parse_bff(input_file)
+        
+        print("Solving puzzle (timeout after 2 minutes)...")
         solution = solve_lazor(board)
         
+        # Output results
         if solution:
+            print("\nSolution found! Saving to file...")
             save_solution(solution, output_file)
             print(f"Solution saved to {output_file}")
         else:
-            print("No solution found")
+            print("\nNo solution found within time limit.")
     except FileNotFoundError:
-        print(f"Error: Could not find file '{input_file}'")
-        print("Make sure:")
-        print("1. The file exists")
-        print("2. You're running from the right directory")
-        print("Current directory contents:")
-        import os
-        print(os.listdir('.'))
+        print(f"Error: File '{input_file}' not found.")
+    except ValueError as e:
+        print(f"Error parsing file: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+
+
+if __name__ == "__main__":
+    main()

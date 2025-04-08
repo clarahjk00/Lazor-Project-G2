@@ -1,0 +1,13 @@
+Solution Grid:
+O O O .
+. . . .
+
+Laser Paths (* = laser passes through):
+.......
+..*...*
+.*...*.
+*......
+
+Target Points:
+(6, 1)
+(0, 3)
