@@ -8,7 +8,7 @@ The free version of the game provides only three hints. So, are you stuck with a
 
 ### ⚙️How to use:
 
-When you cannot solve a particular board, make your .bff file and use "[our code file name]" to solve it.
+When you cannot solve a particular board, make your .bff file and use "Main Code Block.py" to solve it.
 
 The .bff file needs to start with the board structure you want to solve. Write down the board between the GRID START and the GRID STOP. For example:
 
@@ -48,7 +48,17 @@ P 6 9
 P 9 2
 ```
 
-After compiling all the necessary parts into the .bff file, **voila!** You are ready to get the solution!
+After compiling all the necessary parts into the .bff file, **voila!** You are ready to get the solution! 
+Scroll down to the end and edit input_file and output_file on "Main Code Block.py". For example:
+
+'''
+input_file = 'whatever.bff'
+output_file = 'whatever_solution.txt'
+'''
+
+*Make sure the full file name goes between ' '. Input file should end with .bff and output file should end with .txt*
+
+Run the code and get the file!
 
 *We used yarn_5.bff as an example of structuring the .bff file. Check the file if you are unsure how to compile all the necessary parts!*
 
@@ -56,13 +66,16 @@ After compiling all the necessary parts into the .bff file, **voila!** You are r
 
 ### 🎉What you will get:
 
-Unless the board is super complicated or big, the solution will be given within [TIME TAKEN]. The code will provide [POSSIBLY THE OUTPUT FILE NAME]. Open it, use it, and the puzzle is solved!
+Unless the board is super complicated or big, the solution will be given within 2 minutes. The code will provide {original bff file name}_solution.txt. Open it, use it, and the puzzle is solved!
 
 
 
 ### 📧Still confused? Contact us!
 Nithya Parthasarathi (nparthasarathi17 | npartha2@jh.edu)
-+ Identified the logic and initiated the code generation
++ Identified the logic and initiated the code generation, 
++ Implemented Classes
++ code fix
  
 Clara Hyeonji Kim (clarahjk00 | hkim348@jh.edu)
 + README.md 
++ Implemented parse bff, solver, and save functions
